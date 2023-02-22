@@ -1,8 +1,7 @@
 const multiplefile = require("../schema/multiplefileschema");
-const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const { v4: uuid } = require("uuid");
-fs.mkdir("./uploads", (err) => {});
+
 const uploadFile = async (req, res) => {
   try {
     const file = req.files.img;
