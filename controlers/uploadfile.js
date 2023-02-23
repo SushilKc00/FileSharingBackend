@@ -90,17 +90,21 @@ const downloadImage = async (req, res) => {
 };
 
 const userFileDelete = async (req, res) => {
-  const isUser = await multiplefile.find({ username: req.body.username });
-  if (isUser.length > 0) {
-    isUser.forEach((element) => {
-      for (ele of element.filename) {
-        fs.unlink(`./uploads/${ele.imgName}`, (err) => {});
-      }
-    });
-    await multiplefile.deleteMany({ username: req.body.username });
-    res.json({ success: true, message: "Files Deleted" });
-  } else {
-    res.json({ success: false, message: "sorry you not loggined" });
+  try {
+    const isUser = await multiplefile.find({ username: req.body.username });
+    if (isUser.length > 0) {
+      isUser.forEach((element) => {
+        for (ele of element.filename) {
+          fs.unlink(`./uploads/${ele.imgName}`, (err) => {});
+        }
+      });
+      await multiplefile.deleteMany({ username: req.body.username });
+      res.json({ success: true, message: "Files Deleted" });
+    } else {
+      res.json({ success: false, message: "sorry you not loggined" });
+    }
+  } catch (error) {
+    res.json({ success: false, message: "error" });
   }
 };
 module.exports = {
