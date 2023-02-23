@@ -15,9 +15,13 @@ const userLogin = async (req, res) => {
   try {
     const userExists = await userModel.findOne({ username });
     if (userExists) {
-      const token = await jwt.sign({ id: userExists._id }, process.env.KEY, {
-        expiresIn: "24h",
-      });
+      const token = await jwt.sign(
+        { id: userExists._id, username: userExists.username },
+        process.env.KEY,
+        {
+          expiresIn: "24h",
+        }
+      );
       const isMatch = userExists.password === password;
       if (isMatch) {
         res.json({ success: true, message: "Login successfull!", token });

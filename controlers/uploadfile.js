@@ -1,10 +1,13 @@
 const multiplefile = require("../schema/multiplefileschema");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
 const { v4: uuid } = require("uuid");
 
 const uploadFile = async (req, res) => {
   try {
     const file = req.files.img;
+    const token = req.headers.authorization;
+    let userDetails;
     if (!file.length) {
       const imgName = `${Date.now()}-${file.name}`;
       let imgDetails = {
@@ -12,12 +15,29 @@ const uploadFile = async (req, res) => {
         format: file.mimetype,
       };
       file.mv("./uploads/" + imgName);
-      const userDetails = await multiplefile.create({
-        filename: imgDetails,
-        uuid: uuid(),
-      });
+      if (token) {
+        const user = await jwt.verify(token, process.env.KEY);
+        userDetails = await multiplefile.create({
+          filename: imgDetails,
+          uuid: uuid(),
+          username: user.username,
+        });
+      } else {
+        userDetails = await multiplefile.create({
+          filename: imgDetails,
+          uuid: uuid(),
+        });
+      }
       const link = `${process.env.LINK}/${userDetails.uuid}`;
-      res.json({ success: true, link });
+      if (token) {
+        const mytoken = await jwt.sign(
+          { uuid: userDetails.uuid },
+          process.env.KEY
+        );
+        res.json({ success: true, link, token: mytoken });
+      } else {
+        res.json({ success: true, link });
+      }
     } else {
       let imgArr = [];
       for (var i = 0; i < file.length; i++) {
@@ -29,15 +49,32 @@ const uploadFile = async (req, res) => {
         };
         imgArr.push(imgDetails);
       }
-      const userDetails = await multiplefile.create({
-        filename: imgArr,
-        uuid: uuid(),
-      });
+      if (token) {
+        const user = await jwt.verify(token, process.env.KEY);
+        userDetails = await multiplefile.create({
+          filename: imgArr,
+          uuid: uuid(),
+          username: user.username,
+        });
+      } else {
+        userDetails = await multiplefile.create({
+          filename: imgArr,
+          uuid: uuid(),
+        });
+      }
       const link = `${process.env.LINK}/${userDetails.uuid}`;
-      res.json({ success: true, link });
+      if (token) {
+        const mytoken = await jwt.sign(
+          { uuid: userDetails.uuid },
+          process.env.KEY
+        );
+        res.json({ success: true, link, token: mytoken });
+      } else {
+        res.json({ success: true, link });
+      }
     }
   } catch (error) {
-    res.json({ message: error, success: false });
+    res.json({ message: "error", success: false });
   }
 };
 
@@ -51,17 +88,24 @@ const downloadImage = async (req, res) => {
   const downloadPic = `./uploads/${req.params.uuid}`;
   res.download(downloadPic);
 };
-const deleteFile = async (req, res) => {
-  const token = req.headers.authorization;
-  if (token) {
-    const userDetails = await jwt.verify(token, process.env.KEY);
-    const data = await multiplefile.findOne({ uuid: userDetails.uuid });
-    for (ele of data.filename) {
-      fs.unlink(`./uploads/${ele.filename}`, (err) => {});
-    }
-    res.json({ success: true, message: "file Deleted" });
+
+const userFileDelete = async (req, res) => {
+  const isUser = await multiplefile.find({ username: req.body.username });
+  if (isUser.length > 0) {
+    isUser.forEach((element) => {
+      for (ele of element.filename) {
+        fs.unlink(`./uploads/${ele.imgName}`, (err) => {});
+      }
+    });
+    await multiplefile.deleteMany({ username: req.body.username });
+    res.json({ success: true, message: "Files Deleted" });
   } else {
-    res.json({ success: false, message: "sorry you not logined" });
+    res.json({ success: false, message: "sorry you not loggined" });
   }
 };
-module.exports = { uploadFile, getAllImages, downloadImage, deleteFile };
+module.exports = {
+  uploadFile,
+  getAllImages,
+  downloadImage,
+  userFileDelete,
+};

@@ -3,6 +3,7 @@ const schema = new mongoose.Schema(
   {
     filename: [Object],
     uuid: { type: String, required: true },
+    username: { type: String },
     sender: { type: String, required: false },
     receiver: { type: String, required: false },
   },

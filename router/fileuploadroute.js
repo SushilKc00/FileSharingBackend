@@ -5,11 +5,12 @@ const {
   getAllImages,
   downloadImage,
   deleteFile,
+  userFileDelete,
 } = require("../controlers/uploadfile");
 
 Router.get("/:uuid", getAllImages);
 Router.get("/download/uploads/:uuid", downloadImage);
 Router.post("/", uploadFile);
-Router.post("/delete", deleteFile);
+Router.post("/user/delete", userFileDelete);
 
 module.exports = { Router };
